@@ -79,7 +79,7 @@ const teamSchema = new mongoose.Schema({
 
 const Team = mongoose.model('Team', teamSchema);
 
-// Seed Initial Team Data
+// Seed Initial Team data
 const seedTeams = async () => {
   const teamsData = [
       {
