@@ -1,12 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
 const cors = require('cors');
 
 const app = express();
 
 // Middleware
-app.use(bodyParser.json());
+app.use(express.json()); // Replacing body-parser with express.json()
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -14,7 +13,7 @@ app.use(cors({
 }));
 
 // MongoDB Connection
-const mongoURL = 'mongodb+srv://Piyush:Piyush1@cluster0.erzialc.mongodb.net/IPL';
+const mongoURL = process.env.MONGO_URL || 'mongodb+srv://Piyush:Piyush1@cluster0.erzialc.mongodb.net/IPL';
 
 mongoose.connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
@@ -107,9 +106,6 @@ const seedTeams = async () => {
         color: '#0057B8',
         logo: 'https://logowik.com/content/uploads/images/delhi-capitals3041.jpg',
       },
-    
-    
-    // Add more teams as needed
   ];
 
   for (const teamData of teamsData) {
@@ -173,8 +169,8 @@ app.get("/teamassigned", async (req, res) => {
   }
 });
 
-// Start Server
-const PORT = 3001;
-app.listen(PORT, '0.0.0.0', () => {
+// Start Server (Vercel uses dynamic ports)
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
   console.log(`Server is running on port: ${PORT}`);
 });
