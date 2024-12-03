@@ -84,7 +84,7 @@ const seedTeams = async () => {
       {
         team: 'RCB',
         color: '#D21A28',
-        logo: 'https://logowik.com/royal-challengers-bangalore-logo-vector-svg-pdf-ai-eps-cdr-free-download-13717.html',
+        logo: 'https://logowik.com/content/uploads/images/royal-challengers-bangalore1227.jpg',
       },
       {
         team: 'MI',
@@ -168,6 +168,58 @@ app.get("/teamassigned", async (req, res) => {
     res.status(500).json({ error: 'Error fetching team: ' + error.message });
   }
 });
+
+
+// Product posting only for admin control
+// data feeded through postman on this API
+
+const productSchema = new mongoose.Schema({
+  Team :String,
+  P_url :String,
+  P_name: String,
+  P_price: String
+});
+
+const Product = mongoose.model('Product', productSchema);
+
+app.post("/product_listing", async (req, res) => {
+  const { Team,P_url, P_name ,P_price } = req.body;
+  try {
+    const newProduct = new Product({Team,P_url, P_name ,P_price });
+    await newProduct.save();
+    res.status(201).json('Product saved successfully');
+  } catch (error) {
+    res.status(500).json('Error saving Product: ' + error.message);
+  }
+});
+
+
+
+// API to get listed Products
+
+
+app.get("/product_listing", async (req, res) => {
+  const { Team } = req.query;
+
+  // Check if the 'Team' query parameter is provided
+  if (!Team) {
+    return res.status(400).json({ error: "'Team' query parameter is required" });
+  }
+
+  try {
+    // Find products matching the provided team
+    const products = await Product.find({ Team });
+
+    if (products.length === 0) {
+      return res.status(404).json({ error: `No products found for team: ${Team}` });
+    }
+
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching products: ' + error.message });
+  }
+});
+
 
 // Start Server (Vercel uses dynamic ports)
 const PORT = process.env.PORT || 3001;
