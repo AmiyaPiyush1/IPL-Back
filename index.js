@@ -1,19 +1,19 @@
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
 
-// Middleware
-app.use(express.json()); // Replacing body-parser with express.json()
+app.use(express.json());
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type']
 }));
 
-// MongoDB Connection
-const mongoURL = process.env.MONGO_URL || 'mongodb+srv://Piyush:Piyush1@cluster0.erzialc.mongodb.net/IPL';
+const mongoURL = process.env.MONGO_URL;
 
 mongoose.connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
@@ -23,12 +23,11 @@ mongoose.connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true })
     console.error("MongoDB connection error:", error);
   });
 
-// Root Route
 app.get('/', (req, res) => {
   res.send('Server is running and ready to handle requests!');
 });
 
-// User Schema and Model
+
 const userSchema = new mongoose.Schema({
   form: { type: String, index: true },
   password: String
@@ -53,6 +52,7 @@ app.post("/user_name", async (req, res) => {
   }
 });
 
+
 // User Login
 app.post("/login", async (req, res) => {
   const { form, password } = req.body;
@@ -68,12 +68,12 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Team Schema and Model
+
 const teamSchema = new mongoose.Schema({
   username: { type: String, index: true },
   team: String,
-  color: String,  // Team color
-  logo: String    // Team logo URL
+  color: String,  
+  logo: String    
 });
 
 const Team = mongoose.model('Team', teamSchema);
@@ -81,31 +81,31 @@ const Team = mongoose.model('Team', teamSchema);
 // Seed Initial Team data
 const seedTeams = async () => {
   const teamsData = [
-      {
-        team: 'RCB',
-        color: '#D21A28',
-        logo: 'https://logowik.com/content/uploads/images/royal-challengers-bangalore1227.jpg',
-      },
-      {
-        team: 'MI',
-        color: '#045193',
-        logo: 'https://logowik.com/content/uploads/images/mumbai-indians2544.jpg',
-      },
-      {
-        team: 'CSK',
-        color: '#F8CD33',
-        logo: 'https://logowik.com/content/uploads/images/chennai-super-kings3461.jpg',
-      },
-      {
-        team: 'KKR',
-        color: '#3C0D6E',
-        logo: 'https://logowik.com/content/uploads/images/kolkata-knight-riders6292.jpg',
-      },
-      {
-        team: 'DC',
-        color: '#0057B8',
-        logo: 'https://logowik.com/content/uploads/images/delhi-capitals3041.jpg',
-      },
+    {
+      team: 'RCB',
+      color: '#D21A28',
+      logo: 'https://logowik.com/content/uploads/images/royal-challengers-bangalore1227.jpg',
+    },
+    {
+      team: 'MI',
+      color: '#045193',
+      logo: 'https://logowik.com/content/uploads/images/mumbai-indians2544.jpg',
+    },
+    {
+      team: 'CSK',
+      color: '#F8CD33',
+      logo: 'https://logowik.com/content/uploads/images/chennai-super-kings3461.jpg',
+    },
+    {
+      team: 'KKR',
+      color: '#3C0D6E',
+      logo: 'https://logowik.com/content/uploads/images/kolkata-knight-riders6292.jpg',
+    },
+    {
+      team: 'DC',
+      color: '#0057B8',
+      logo: 'https://logowik.com/content/uploads/images/delhi-capitals3041.jpg',
+    },
   ];
 
   for (const teamData of teamsData) {
@@ -169,10 +169,7 @@ app.get("/teamassigned", async (req, res) => {
   }
 });
 
-
 // Product posting only for admin control
-// data feeded through postman on this API
-
 const productSchema = new mongoose.Schema({
   Team :String,
   P_url :String,
@@ -193,21 +190,15 @@ app.post("/product_listing", async (req, res) => {
   }
 });
 
-
-
 // API to get listed Products
-
-
 app.get("/product_listing", async (req, res) => {
   const { Team } = req.query;
 
-  // Check if the 'Team' query parameter is provided
   if (!Team) {
     return res.status(400).json({ error: "'Team' query parameter is required" });
   }
 
   try {
-    // Find products matching the provided team
     const products = await Product.find({ Team });
 
     if (products.length === 0) {
@@ -220,6 +211,56 @@ app.get("/product_listing", async (req, res) => {
   }
 });
 
+// Add to cart
+const cartSchema = new mongoose.Schema({
+  Username:String,
+  Team :String,
+  P_url :String,
+  P_name: String,
+  P_price: String
+});
+
+const Cart = mongoose.model('Cart', cartSchema);
+
+app.post("/add_to_cart", async (req, res) => {
+  const { Username,Team,P_url, P_name ,P_price } = req.body;
+  try {
+    const newCart = new Cart({Username,Team,P_url, P_name ,P_price });
+    await newCart.save();
+    res.status(201).json('Product added to cart');
+  } catch (error) {
+    res.status(500).json('Error adding Product: ' + error.message);
+  }
+});
+
+// Fetch cart data based on Username
+app.get("/add_to_cart", async (req, res) => {
+  const { Username } = req.query;
+
+  try {
+    const cartItems = await Cart.find({ Username });
+
+    if (cartItems.length === 0) {
+      return res.status(404).json({ message: "No items found in the cart for this user." });
+    }
+
+    res.status(200).json(cartItems);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching cart items: " + error.message });
+  }
+});
+
+// Remove product from cart
+app.delete('/add_to_cart', async (req, res) => {
+  const { productId } = req.query;
+  try {
+    await Cart.deleteOne({ _id: productId });
+    res.status(200).send({ message: 'Product removed from cart successfully' });
+  } catch (error) {
+    console.error('Error deleting cart item:', error);
+    res.status(500).send({ error: 'Failed to delete product from cart' });
+  }
+});
 
 // Start Server (Vercel uses dynamic ports)
 const PORT = process.env.PORT || 3001;
